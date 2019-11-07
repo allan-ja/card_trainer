@@ -109,3 +109,5 @@ backgrounds.pck
 logs
 *.h5
 .vscode
+images
+masks
