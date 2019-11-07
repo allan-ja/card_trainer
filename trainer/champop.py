@@ -296,7 +296,6 @@ def train(args):
                     labels=labels, height=IMAGE_HEIGHT, width=IMAGE_WIDTH)
     dataset_val.prepare()
 
-  
 
     # Create model
     model = modellib.MaskRCNN(mode="training", config=config,
