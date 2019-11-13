@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 _REQUIREMENTS = ['numpy', 'Pillow', 'matplotlib', 'scikit-image', 'imageio', 
                 'opencv-python', 'h5py', 'imgaug', 'pickle-mixin',
-                'tensorflow', 'keras', 'pandas']
+                'tensorflow', 'keras', 'pandas', 'pillow']
 
 setup(
     name='trainer',

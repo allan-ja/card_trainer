@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.image as mpimg
 import pickle
 import tensorflow as tf
-from pillow import Image
+from PIL import Image
 from sklearn.model_selection import train_test_split
 
 from .config import Config
@@ -66,14 +66,12 @@ class ChampopDataset(utils.Dataset):
                            class_ids=['card', 'card'])
 
 
-
     def load_image(self, image_id):
         """Generate an image from the specs of the given image ID.
         Typically this function loads the image from a file.
         """
         info = self.image_info[image_id]
-
-        image = np.array(Image.open('images/' + info['path']))
+        image = np.array(Image.open(info['path']))
         return image
 
 
@@ -90,7 +88,7 @@ class ChampopDataset(utils.Dataset):
         """Load mask image and class_ids
         """
         info = self.image_info[image_id]
-        mask = np.array(Image.open('masks_images/' + info['mask_path']))
+        mask = np.array(Image.open(info['mask_path']))
         class_ids = np.array([self.class_names.index(c) for c in info['class_ids']])
         return mask[:, :, :2].astype(np.bool), class_ids.astype(np.int32)
 
@@ -105,54 +103,57 @@ def train(args):
     labels = ['card']
 
     full_dataset = pd.read_csv(CSV_FILEPATH)
+    full_dataset['im_filename'] = full_dataset['im_filename'].apply(
+                                    lambda x: os.path.join(args.data_dir, x))
+    full_dataset['mask_filename'] = full_dataset['mask_filename'].apply(
+                                    lambda x: os.path.join(args.data_dir, x))
+
     train_df, test_df = train_test_split(full_dataset, test_size=0.15)
 
     # Training dataset.
-
-    # dataset_train = ChampopDataset()
-    # dataset_train.load_scenes(10, card_pickle_path=card_pickle_path, 
-    #                 backgrounds_folder=background_folder,
-    #                 labels=labels, height=IMAGE_HEIGHT, width=IMAGE_WIDTH)
-    # dataset_train.prepare()
-
-    # # Validation dataset
-    # dataset_val = ChampopDataset()
-    # dataset_val.load_scenes(2, card_pickle_path=CARDS_PICKLE, 
-    #                 backgrounds_folder=BACKGROUNDS_FOLDER,
-    #                 labels=labels, height=IMAGE_HEIGHT, width=IMAGE_WIDTH)
-    # dataset_val.prepare()
+    dataset_train = ChampopDataset()
+    dataset_train.load_scenes(train_df, labels=labels, height=IMAGE_HEIGHT,
+                                width=IMAGE_WIDTH)
+    dataset_train.prepare()
 
 
-    # # Create model
-    # model = modellib.MaskRCNN(mode="training", config=config,
-    #                             model_dir=args.job_dir)
+    # Validation dataset
+    dataset_val = ChampopDataset()
+    dataset_val.load_scenes(test_df, labels=labels, height=IMAGE_HEIGHT,
+                                width=IMAGE_WIDTH)
+    dataset_val.prepare()
 
-    # weights_path = os.path.join(args.job_dir, COCO_WEIGHTS_PATH)
 
-    # # Load weights
-    # print("Loading weights ", weights_path)
+    # Create model
+    model = modellib.MaskRCNN(mode="training", config=config,
+                                model_dir=args.job_dir)
 
-    # # Exclude the last layers because they require a matching
-    # # number of classes
-    # model.load_weights(weights_path, by_name=True, exclude=[
-    #         "mrcnn_class_logits", "mrcnn_bbox_fc",
-    #         "mrcnn_bbox", "mrcnn_mask"])
+    weights_path = args.weights
+
+    # Load weights
+    print("Loading weights ", weights_path)
+
+    # Exclude the last layers because they require a matching
+    # number of classes
+    model.load_weights(weights_path, by_name=True, exclude=[
+            "mrcnn_class_logits", "mrcnn_bbox_fc",
+            "mrcnn_bbox", "mrcnn_mask"])
 
 
 
-    # # *** This training schedule is an example. Update to your needs ***
-    # # Since we're using a very small dataset, and starting from
-    # # COCO trained weights, we don't need to train too long. Also,
-    # # no need to train all layers, just the heads should do it.
-    # print("Training network heads")
-    # model.train(dataset_train, dataset_val,
-    #             learning_rate=config.LEARNING_RATE,
-    #             epochs=30,
-    #             layers='heads')
+    # *** This training schedule is an example. Update to your needs ***
+    # Since we're using a very small dataset, and starting from
+    # COCO trained weights, we don't need to train too long. Also,
+    # no need to train all layers, just the heads should do it.
+    print("Training network heads")
+    model.train(dataset_train, dataset_val,
+                learning_rate=config.LEARNING_RATE,
+                epochs=30,
+                layers='heads')
 
-    # # Export model
-    # export_path = os.path.join(args.job_dir, 'keras_export')
-    # # tf.contrib.saved_model.save_keras_model(model.keras_model, export_path)
+    # Export model
+    export_path = os.path.join(args.job_dir, 'keras_export')
+    # tf.contrib.saved_model.save_keras_model(model.keras_model, export_path)
 
 
 def get_args():
@@ -171,12 +172,9 @@ def get_args():
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
-    parser.add_argument('--image', required=False,
-                        metavar="path or URL to image",
-                        help='Image to apply the color splash effect on')
-    parser.add_argument('--video', required=False,
-                        metavar="path or URL to video",
-                        help='Video to apply the color splash effect on')
+    parser.add_argument('--data-dir', required=False,
+                        metavar="path or URL to the data directory",
+                        help='')
     args = parser.parse_args()
     return args
 

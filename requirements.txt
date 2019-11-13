@@ -10,3 +10,4 @@ pickle-mixin
 tensorflow>=1.13,<2
 keras
 pandas
+pillow
