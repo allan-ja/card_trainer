@@ -37,7 +37,7 @@ class ChampopConfig(Config):
     # GPU_COUNT = 3
     IMAGES_PER_GPU = 2
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100
+    STEPS_PER_EPOCH = 1
     IMAGE_SHAPE = np.array([IMAGE_HEIGHT, IMAGE_WIDTH, 3])
 
 
@@ -148,7 +148,7 @@ def train(args):
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=30,
+                epochs=args.epochs,
                 layers='heads')
 
     # Export model
@@ -175,6 +175,9 @@ def get_args():
     parser.add_argument('--data-dir', required=False,
                         metavar="path or URL to the data directory",
                         help='')
+    parser.add_argument('--epochs', required=False, nargs='?', default=30, type=int,
+                        metavar="Number of epochs to train for",
+                        help='Number of epochs to train fo')
     args = parser.parse_args()
     return args
 
@@ -189,6 +192,7 @@ if __name__ == '__main__':
     print("Weights: ", args.weights)
     print("Dataset: ", args.dataset)
     print("Logs: ", args.job_dir)
+    print("Epochs: ", args.epochs)
 
     train(args)
 
